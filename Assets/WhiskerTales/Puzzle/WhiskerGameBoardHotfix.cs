@@ -33,6 +33,12 @@ namespace WhiskerTales.Puzzle
         private static bool bootstrapped;
         private static FieldInfo gameSoundsField;
 
+        private static readonly HashSet<string> WhiskerTileNames = new HashSet<string>
+        {
+            "FishTile", "CatnipTile", "FishboneTile",
+            "YarnTile", "PawprintTile", "MilkTile",
+        };
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Bootstrap()
         {
@@ -96,14 +102,17 @@ namespace WhiskerTales.Puzzle
                 allPools.AddRange(roots[i].GetComponentsInChildren<ObjectPool>(true));
             }
 
+            // Donor must be a Whisker tile (so patched booster/special pools render
+            // as a Whisker sprite, not a leftover Kit StripedHorizontal/Wrapped prefab
+            // that some sibling pool happens to still reference). Prefer FishTile, then
+            // any of the six Whisker base-color variants.
             GameObject donor = null;
             for (int k = 0; k < allPools.Count; k++)
             {
-                if (allPools[k].prefab != null)
-                {
-                    donor = allPools[k].prefab;
-                    break;
-                }
+                var p = allPools[k].prefab;
+                if (p == null) continue;
+                if (p.name == "FishTile") { donor = p; break; }
+                if (donor == null && WhiskerTileNames.Contains(p.name)) donor = p;
             }
 
             int patched = 0;
