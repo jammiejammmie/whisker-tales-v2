@@ -21,7 +21,7 @@
         "Switch": 100,
         "ColorBomb": 100
     },
-    "defaultZoomLevel": 1.5,
+    "defaultZoomLevel": 1.0,
     "defaultCanvasScalingMatch": 0.5,
     "resolutionOverrides": [
         {
@@ -36,6 +36,13 @@
             "width": 1440,
             "height": 2960,
             "zoomLevel": 1.4,
+            "canvasScalingMatch": 0.0
+        },
+        {
+            "name": "Samsung Galaxy S26",
+            "width": 1080,
+            "height": 2340,
+            "zoomLevel": 1.0,
             "canvasScalingMatch": 0.0
         }
     ],
