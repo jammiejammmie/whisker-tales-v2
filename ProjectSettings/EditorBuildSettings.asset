@@ -6,6 +6,15 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Scenes/SampleScene.unity
-    guid: 2cda990e2423bbf4892e6590ba056729
+    path: Assets/WhiskerTales/UI/Scenes/WhiskerLoadingScene.unity
+    guid: 6ff7c64b4c394016a29181b380f3b422
+  - enabled: 1
+    path: Assets/WhiskerTales/Puzzle/Scenes/WhiskerGameScene.unity
+    guid: add3af94366bde24395aa8d6b373c9b8
+  - enabled: 1
+    path: Assets/WhiskerTales/UI/Scenes/WhiskerNabiRoomScene.unity
+    guid: ed7ba2c4b2f640b4b68f168dc07a3a81
+  - enabled: 1
+    path: Assets/WhiskerTales/UI/Scenes/WhiskerSleepModeScene.unity
+    guid: d1e715fe0daa4655b2bd779f4cf05f60
   m_configObjects: {}
