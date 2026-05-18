@@ -39,6 +39,7 @@ namespace WhiskerTales.UI
             BuildAffinityBar(root);
             BuildActionButtons(root);
             BuildTipRow(root);
+            WhiskerBottomNavBar.AttachTo(root, WhiskerBottomNavBar.Tab.Nabi);
         }
 
         private void BuildTopBar(RectTransform parent)
@@ -140,7 +141,7 @@ namespace WhiskerTales.UI
             img.sprite = WhiskerTheme.RoundedSprite;
             img.type = Image.Type.Sliced;
             var rt = (RectTransform)bar.transform;
-            WhiskerTheme.Anchor(rt, new Vector2(0.05f, 0.27f), new Vector2(0.95f, 0.34f),
+            WhiskerTheme.Anchor(rt, new Vector2(0.05f, 0.31f), new Vector2(0.95f, 0.38f),
                 Vector2.zero, Vector2.zero);
 
             var heart = WhiskerTheme.MakeCircle(bar.transform, "Heart", 56f, WhiskerTheme.HeartPink);
@@ -215,7 +216,7 @@ namespace WhiskerTales.UI
                 img.sprite = WhiskerTheme.RoundedSprite;
                 img.type = Image.Type.Sliced;
                 WhiskerTheme.Anchor((RectTransform)card.transform,
-                    new Vector2(min, 0.08f), new Vector2(max, 0.24f), Vector2.zero, Vector2.zero);
+                    new Vector2(min, 0.14f), new Vector2(max, 0.28f), Vector2.zero, Vector2.zero);
 
                 var ko = WhiskerTheme.MakeText(card.transform, "Ko", titles[i].Item1,
                     38, WhiskerTheme.DeepBrown);
@@ -239,7 +240,7 @@ namespace WhiskerTales.UI
                 "💡 매일 다른 방법으로 교감하면 더 많은 보상을 받을 수 있어요!  ♥",
                 26, WhiskerTheme.Cream);
             WhiskerTheme.Anchor((RectTransform)tip.transform,
-                new Vector2(0f, 0.02f), new Vector2(1f, 0.06f), Vector2.zero, Vector2.zero);
+                new Vector2(0f, 0.10f), new Vector2(1f, 0.13f), Vector2.zero, Vector2.zero);
         }
     }
 }

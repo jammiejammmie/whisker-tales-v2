@@ -48,6 +48,7 @@ namespace WhiskerTales.UI
             BuildSleepingCat(rt);
             BuildAsmrPlayer(rt);
             BuildFooter(rt);
+            WhiskerBottomNavBar.AttachTo(rt, WhiskerBottomNavBar.Tab.Sleep);
 
             lastInputTime = Time.unscaledTime;
             StartCoroutine(IdleDimmer());
@@ -134,7 +135,7 @@ namespace WhiskerTales.UI
             img.sprite = WhiskerTheme.RoundedSprite;
             img.type = Image.Type.Sliced;
             WhiskerTheme.Anchor((RectTransform)card.transform,
-                new Vector2(0.04f, 0.07f), new Vector2(0.96f, 0.28f),
+                new Vector2(0.04f, 0.14f), new Vector2(0.96f, 0.34f),
                 Vector2.zero, Vector2.zero);
 
             // Title
@@ -228,7 +229,7 @@ namespace WhiskerTales.UI
                 "☾ 편안한 밤 되세요, 집사님 ♡", 26,
                 new Color(0.78f, 0.72f, 0.62f));
             WhiskerTheme.Anchor((RectTransform)f.transform,
-                new Vector2(0f, 0.02f), new Vector2(1f, 0.06f), Vector2.zero, Vector2.zero);
+                new Vector2(0f, 0.10f), new Vector2(1f, 0.13f), Vector2.zero, Vector2.zero);
         }
     }
 }

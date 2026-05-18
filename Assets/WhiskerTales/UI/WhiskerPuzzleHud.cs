@@ -207,30 +207,9 @@ namespace WhiskerTales.UI
             rt.anchoredPosition = new Vector2(140f, 80f);
         }
 
-        // Bottom 12%: nav bar with 5 tabs
         private void BuildBottomNav(RectTransform parent)
         {
-            var nav = WhiskerTheme.MakePanel(parent, "NavBar", WhiskerTheme.NavBg);
-            var navImg = nav.GetComponent<Image>();
-            navImg.sprite = WhiskerTheme.RoundedSprite;
-            navImg.type = Image.Type.Sliced;
-            var rt = (RectTransform)nav.transform;
-            WhiskerTheme.Anchor(rt, new Vector2(0f, 0f), new Vector2(1f, 0.12f), Vector2.zero, Vector2.zero);
-
-            string[] labels = { "Shop", "Cat Room", "Home", "Gallery", "Friends" };
-            string[] scenes = { null, WhiskerScreens.NabiRoom, null, null, null };
-            for (int i = 0; i < 5; i++)
-            {
-                float t = (i + 0.5f) / 5f;
-                var slot = WhiskerTheme.MakePanel(nav.transform, $"Tab{i}", new Color(0, 0, 0, 0));
-                var sr = (RectTransform)slot.transform;
-                WhiskerTheme.Anchor(sr, new Vector2(t - 0.10f, 0f), new Vector2(t + 0.10f, 1f), Vector2.zero, Vector2.zero);
-                WhiskerTheme.MakeCircle(slot.transform, "Icon", 80f, WhiskerTheme.Cream).GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 40f);
-                var lbl = WhiskerTheme.MakeText(slot.transform, "Lbl", labels[i], 24, WhiskerTheme.Cream);
-                WhiskerTheme.Anchor((RectTransform)lbl.transform, new Vector2(0f, 0f), new Vector2(1f, 0.30f), Vector2.zero, Vector2.zero);
-                string target = scenes[i];
-                WhiskerButton.Attach(slot, () => { if (target != null) WhiskerScreens.Go(target); });
-            }
+            WhiskerBottomNavBar.AttachTo(parent, WhiskerBottomNavBar.Tab.Puzzle);
         }
     }
 }
