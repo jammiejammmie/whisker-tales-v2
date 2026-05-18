@@ -27,11 +27,17 @@ namespace WhiskerTales.Puzzle
     /// </summary>
     public sealed class WhiskerLevelPopupHotfix : MonoBehaviour
     {
+        // Disabled for stable playable v1 — the Kit's LevelGoalsPopup is the
+        // intended start-of-level UI again. Flip this to true to re-enable
+        // suppression once the Whisker overlay replaces it.
+        private const bool Enabled = false;
+
         private static bool bootstrapped;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void Bootstrap()
         {
+            if (!Enabled) return;
             if (bootstrapped) return;
             bootstrapped = true;
 
