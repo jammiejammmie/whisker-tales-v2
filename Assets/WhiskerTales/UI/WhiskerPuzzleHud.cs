@@ -253,16 +253,41 @@ namespace WhiskerTales.UI
             }
         }
 
-        // Center-bottom: nabi companion placeholder (white circle until art ships).
-        // Sits just above the BottomNavBar in the strip below the board.
+        // Center-bottom: nabi companion. Loads nabi_puzzle.png from
+        // Assets/WhiskerTales/UI/Resources/ (a runtime-loadable mirror of the
+        // source art at Assets/WhiskerTales/Art/Cats/nabi_puzzle.png — Cats/
+        // is not under any Resources/ folder so the source can't be loaded
+        // directly by this runtime-injected HUD). Falls back to the old
+        // white-circle placeholder if the asset can't be found, so the HUD
+        // still has a visible nabi during asset migrations.
         private void BuildNabiCompanion(RectTransform parent)
         {
+            var sprite = Resources.Load<Sprite>("nabi_puzzle");
+            var size = new Vector2(360f, 360f);
+
+            if (sprite != null)
+            {
+                var go = new GameObject("NabiCompanion", typeof(RectTransform), typeof(Image));
+                go.transform.SetParent(parent, false);
+                var img = go.GetComponent<Image>();
+                img.sprite = sprite;
+                img.preserveAspect = true;
+                img.raycastTarget = false;
+                var rt = (RectTransform)go.transform;
+                rt.anchorMin = new Vector2(0.5f, 0.14f);
+                rt.anchorMax = new Vector2(0.5f, 0.14f);
+                rt.sizeDelta = size;
+                rt.anchoredPosition = new Vector2(0f, 0f);
+                return;
+            }
+
+            // Fallback: keep the placeholder so the layout never collapses.
             var cat = WhiskerTheme.MakeCircle(parent, "NabiCompanion",
                 200f, new Color(1f, 1f, 1f, 0.92f));
-            var rt = (RectTransform)cat.transform;
-            rt.anchorMin = new Vector2(0.5f, 0.14f);
-            rt.anchorMax = new Vector2(0.5f, 0.14f);
-            rt.anchoredPosition = new Vector2(0f, 0f);
+            var crt = (RectTransform)cat.transform;
+            crt.anchorMin = new Vector2(0.5f, 0.14f);
+            crt.anchorMax = new Vector2(0.5f, 0.14f);
+            crt.anchoredPosition = new Vector2(0f, 0f);
         }
 
         private void BuildBottomNav(RectTransform parent)
