@@ -65,23 +65,15 @@ namespace WhiskerTales.UI
 
         private static void HideKitHud()
         {
-            // GameUi visuals: pink Moves/Goal bar + score progress bar. GameBoard
-            // calls SetLimit / SetGoals / UpdateGoals on it, so we keep the
-            // component alive — we just hide its visuals via a CanvasGroup.
-            var kitUi = FindObjectOfType<GameUi>();
-            if (kitUi != null)
+            // GameUi + GameUICanvas are now disabled at the scene level
+            // (WhiskerGameScene.unity m_IsActive: 0). Keep this method as a
+            // belt-and-suspenders runtime guard: anyone enabling the Kit HUD
+            // in the editor will still get it hidden when entering Play.
+            var kitUi = FindObjectOfType<GameUi>(true);
+            if (kitUi != null && kitUi.gameObject.activeSelf)
             {
-                var cg = kitUi.GetComponent<CanvasGroup>();
-                if (cg == null) cg = kitUi.gameObject.AddComponent<CanvasGroup>();
-                cg.alpha = 0f;
-                cg.blocksRaycasts = false;
-                cg.interactable = false;
+                kitUi.gameObject.SetActive(false);
             }
-
-            // Girl portrait: only referenced by end-of-game popups (which call
-            // SetActive(false) themselves), safe to deactivate here.
-            var girl = FindObjectOfType<GameVanilla.Game.UI.Girl>(true);
-            if (girl != null) girl.gameObject.SetActive(false);
         }
 
         private void BuildHud()
@@ -262,14 +254,14 @@ namespace WhiskerTales.UI
         }
 
         // Center-bottom: nabi companion placeholder (white circle until art ships).
-        // Sits between the board's bottom edge and the BottomNavBar.
+        // Sits just above the BottomNavBar in the strip below the board.
         private void BuildNabiCompanion(RectTransform parent)
         {
             var cat = WhiskerTheme.MakeCircle(parent, "NabiCompanion",
-                260f, new Color(1f, 1f, 1f, 0.92f));
+                320f, new Color(1f, 1f, 1f, 0.92f));
             var rt = (RectTransform)cat.transform;
-            rt.anchorMin = new Vector2(0.5f, 0.12f);
-            rt.anchorMax = new Vector2(0.5f, 0.12f);
+            rt.anchorMin = new Vector2(0.5f, 0.21f);
+            rt.anchorMax = new Vector2(0.5f, 0.21f);
             rt.anchoredPosition = new Vector2(0f, 0f);
         }
 
