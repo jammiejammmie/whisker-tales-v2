@@ -258,10 +258,10 @@ namespace WhiskerTales.UI
         private void BuildNabiCompanion(RectTransform parent)
         {
             var cat = WhiskerTheme.MakeCircle(parent, "NabiCompanion",
-                320f, new Color(1f, 1f, 1f, 0.92f));
+                200f, new Color(1f, 1f, 1f, 0.92f));
             var rt = (RectTransform)cat.transform;
-            rt.anchorMin = new Vector2(0.5f, 0.21f);
-            rt.anchorMax = new Vector2(0.5f, 0.21f);
+            rt.anchorMin = new Vector2(0.5f, 0.14f);
+            rt.anchorMax = new Vector2(0.5f, 0.14f);
             rt.anchoredPosition = new Vector2(0f, 0f);
         }
 
