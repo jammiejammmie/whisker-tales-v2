@@ -2,35 +2,37 @@ using System.Collections;
 using GameVanilla.Game.Common;
 using TMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace WhiskerTales.UI
 {
     /// <summary>
-    /// Overlay HUD for WhiskerGameScene per the puzzle mockup (게임.png):
-    ///   Top 18%   : back arrow + Whisker Tales mark + Korean/English copy band
-    ///   Center 52%: GameBoard area, with side panels (Stage/Moves/Goal + Boosters/Settings)
-    ///               and a cat placeholder at bottom-left
-    ///   Bottom 12%: Shop / CatRoom / Home / Gallery / Friends nav bar
+    /// Overlay HUD for WhiskerGameScene, matching the WT_Puzzle_MainBoard_v1
+    /// mockup:
+    ///   - Top center : Whisker Tales script logo + 위스커 테일즈 sub
+    ///   - Top left   : 스테이지 / number card
+    ///   - Top right  : 이동횟수 / number card + settings gear
+    ///   - Top middle : 목표 rope-hung sign with paw + count
+    ///   - Right edge : compact booster column (3 boosters + settings)
+    ///   - Center     : board (Kit's board, no overlay)
+    ///   - Bottom     : nabi companion placeholder + BottomNavBar (Puzzle active)
     ///
-    /// The HUD is injected at runtime by WhiskerScreenBootstrap, so the .unity scene
-    /// itself stays minimal. Stage/Moves/Goal numbers are sampled from the Kit
-    /// GameBoard each frame via reflection-free public hooks so the HUD stays in
-    /// sync without modifying Vendor code.
+    /// Also hides Kit's leftover HUD: the pink Moves/Goal bar and the Girl
+    /// portrait. Hiding is non-destructive — GameUi keeps its component refs
+    /// alive so GameBoard's gameUi.SetLimit/SetGoals/... calls stay no-op safe.
     /// </summary>
     public sealed class WhiskerPuzzleHud : MonoBehaviour
     {
         private TextMeshProUGUI stageLabel;
         private TextMeshProUGUI movesLabel;
-        private TextMeshProUGUI goal1Label;
-        private TextMeshProUGUI goal2Label;
+        private TextMeshProUGUI goalLabel;
         private GameBoard board;
         private int lastStage = -1;
         private int lastMoves = -1;
 
         private void Start()
         {
+            HideKitHud();
             BuildHud();
             StartCoroutine(WaitForBoard());
         }
@@ -61,150 +63,214 @@ namespace WhiskerTales.UI
             }
         }
 
+        private static void HideKitHud()
+        {
+            // GameUi visuals: pink Moves/Goal bar + score progress bar. GameBoard
+            // calls SetLimit / SetGoals / UpdateGoals on it, so we keep the
+            // component alive — we just hide its visuals via a CanvasGroup.
+            var kitUi = FindObjectOfType<GameUi>();
+            if (kitUi != null)
+            {
+                var cg = kitUi.GetComponent<CanvasGroup>();
+                if (cg == null) cg = kitUi.gameObject.AddComponent<CanvasGroup>();
+                cg.alpha = 0f;
+                cg.blocksRaycasts = false;
+                cg.interactable = false;
+            }
+
+            // Girl portrait: only referenced by end-of-game popups (which call
+            // SetActive(false) themselves), safe to deactivate here.
+            var girl = FindObjectOfType<GameVanilla.Game.UI.Girl>(true);
+            if (girl != null) girl.gameObject.SetActive(false);
+        }
+
         private void BuildHud()
         {
             var canvas = WhiskerScreenBootstrap.CreateScreenCanvas("WhiskerHudCanvas");
-            canvas.sortingOrder = 100; // above the GameBoard sprites
-            var canvasRt = (RectTransform)canvas.transform;
+            canvas.sortingOrder = 100;
+            var root = (RectTransform)canvas.transform;
 
-            BuildTopBar(canvasRt);
-            BuildLeftPanel(canvasRt);
-            BuildRightPanel(canvasRt);
-            BuildBottomNav(canvasRt);
-            BuildCatPlaceholder(canvasRt);
+            BuildBackgroundTint(root);
+            BuildTopRow(root);
+            BuildGoalSign(root);
+            BuildRightColumn(root);
+            BuildNabiCompanion(root);
+            BuildBottomNav(root);
         }
 
-        // Top 18% of the screen.
-        private void BuildTopBar(RectTransform parent)
+        // Subtle warm overlay so the Kit's neutral background reads as a
+        // moody hanok interior. Sits behind everything else.
+        private void BuildBackgroundTint(RectTransform parent)
         {
-            var top = WhiskerTheme.MakePanel(parent, "TopBar", new Color(0, 0, 0, 0));
-            var rt = (RectTransform)top.transform;
-            WhiskerTheme.Anchor(rt, new Vector2(0f, 0.82f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
+            var tint = WhiskerTheme.MakePanel(parent, "HanokTint",
+                new Color(0.16f, 0.10f, 0.07f, 0.30f));
+            WhiskerTheme.Stretch((RectTransform)tint.transform);
+            tint.GetComponent<Image>().raycastTarget = false;
+            tint.transform.SetAsFirstSibling();
+        }
 
-            // Back arrow (top-left)
-            var back = WhiskerTheme.MakePanel(top.transform, "Back", WhiskerTheme.PanelTint);
-            var backRt = (RectTransform)back.transform;
-            back.GetComponent<Image>().sprite = WhiskerTheme.RoundedSprite;
-            back.GetComponent<Image>().type = Image.Type.Sliced;
-            WhiskerTheme.Anchor(backRt, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
-                new Vector2(36f, -54f), new Vector2(36f + 108f, 54f));
-            var backArrow = WhiskerTheme.MakeText(back.transform, "Arrow", "←", 72, WhiskerTheme.DeepBrown);
-            WhiskerTheme.Stretch((RectTransform)backArrow.transform);
-            WhiskerButton.Attach(back, () => WhiskerScreens.Go(WhiskerScreens.NabiRoom));
-
-            // Logo (text placeholder)
-            var logo = WhiskerTheme.MakeText(top.transform, "Logo", "Whisker Tales",
-                64, WhiskerTheme.Cream, TextAlignmentOptions.Left);
+        // Top: Logo (center), 스테이지 card (left), 이동횟수 card + gear (right).
+        private void BuildTopRow(RectTransform parent)
+        {
+            // Center logo block.
+            var logo = WhiskerTheme.MakeText(parent, "Logo", "Whisker Tales",
+                72, WhiskerTheme.Cream);
             logo.fontStyle = FontStyles.Bold;
             WhiskerTheme.Anchor((RectTransform)logo.transform,
-                new Vector2(0f, 0.55f), new Vector2(0.6f, 0.95f),
-                new Vector2(180f, 0f), new Vector2(0f, 0f));
+                new Vector2(0.25f, 0.90f), new Vector2(0.75f, 0.97f),
+                Vector2.zero, Vector2.zero);
 
-            // Korean copy + English copy (sentimental band)
-            var koCopy = WhiskerTheme.MakeText(top.transform, "KoreanCopy",
-                "오늘 당신의 시간은 어떤 빛깔이었나요?", 44, WhiskerTheme.Cream);
-            WhiskerTheme.Anchor((RectTransform)koCopy.transform,
-                new Vector2(0f, 0.18f), new Vector2(1f, 0.50f), Vector2.zero, Vector2.zero);
+            var sub = WhiskerTheme.MakeText(parent, "LogoSub", "✦ 위스커 테일즈 ✦",
+                26, new Color(0.92f, 0.85f, 0.70f, 0.95f));
+            WhiskerTheme.Anchor((RectTransform)sub.transform,
+                new Vector2(0.25f, 0.86f), new Vector2(0.75f, 0.90f),
+                Vector2.zero, Vector2.zero);
 
-            var enCopy = WhiskerTheme.MakeText(top.transform, "EnglishCopy",
-                "What color was your day today?", 32, WhiskerTheme.Cream);
-            enCopy.fontStyle = FontStyles.Italic;
-            WhiskerTheme.Anchor((RectTransform)enCopy.transform,
-                new Vector2(0f, 0.02f), new Vector2(1f, 0.22f), Vector2.zero, Vector2.zero);
+            // Left stage card.
+            stageLabel = BuildCornerCard(parent, "StageCard",
+                "스테이지", "127",
+                new Vector2(0f, 0.86f), new Vector2(0f, 0.94f),
+                new Vector2(28f, 0f), new Vector2(260f, 0f));
+
+            // Right moves card.
+            movesLabel = BuildCornerCard(parent, "MovesCard",
+                "이동 횟수", "24",
+                new Vector2(1f, 0.86f), new Vector2(1f, 0.94f),
+                new Vector2(-260f, 0f), new Vector2(-90f, 0f));
+
+            // Settings gear (right of the moves card).
+            var gear = WhiskerTheme.MakeCircle(parent, "Settings",
+                72f, new Color(0.30f, 0.21f, 0.16f, 0.90f));
+            var gearRt = (RectTransform)gear.transform;
+            gearRt.anchorMin = new Vector2(1f, 0.88f);
+            gearRt.anchorMax = new Vector2(1f, 0.88f);
+            gearRt.anchoredPosition = new Vector2(-50f, 0f);
+            var gearGlyph = WhiskerTheme.MakeText(gear.transform, "G", "⚙",
+                40, WhiskerTheme.Cream);
+            WhiskerTheme.Stretch((RectTransform)gearGlyph.transform);
+            WhiskerButton.Attach(gear, () => { /* settings popup hook */ });
         }
 
-        // Left side: Stage / Moves / Goal panel
-        private void BuildLeftPanel(RectTransform parent)
+        private TextMeshProUGUI BuildCornerCard(RectTransform parent, string name,
+            string caption, string number,
+            Vector2 anchorMin, Vector2 anchorMax,
+            Vector2 offsetMin, Vector2 offsetMax)
         {
-            var panel = WhiskerTheme.MakePanel(parent, "LeftPanel", WhiskerTheme.PanelTint);
-            var img = panel.GetComponent<Image>();
+            var card = WhiskerTheme.MakePanel(parent, name, WhiskerTheme.PanelTint);
+            var img = card.GetComponent<Image>();
             img.sprite = WhiskerTheme.RoundedSprite;
             img.type = Image.Type.Sliced;
-            var rt = (RectTransform)panel.transform;
-            WhiskerTheme.Anchor(rt, new Vector2(0f, 0.30f), new Vector2(0f, 0.62f),
-                new Vector2(20f, 0f), new Vector2(180f, 0f));
+            WhiskerTheme.Anchor((RectTransform)card.transform,
+                anchorMin, anchorMax, offsetMin, offsetMax);
 
-            // Stage block
-            WhiskerTheme.MakeText(panel.transform, "StageCap", "STAGE", 28, WhiskerTheme.WarmBrown).rectTransform.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Top, 20f, 40f);
-            stageLabel = WhiskerTheme.MakeText(panel.transform, "StageNum", "127", 52, WhiskerTheme.DeepBrown);
-            stageLabel.fontStyle = FontStyles.Bold;
-            stageLabel.rectTransform.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Top, 56f, 60f);
+            var cap = WhiskerTheme.MakeText(card.transform, "Cap", caption,
+                26, WhiskerTheme.WarmBrown);
+            WhiskerTheme.Anchor((RectTransform)cap.transform,
+                new Vector2(0f, 0.55f), new Vector2(1f, 0.95f),
+                Vector2.zero, Vector2.zero);
 
-            // Moves block
-            WhiskerTheme.MakeText(panel.transform, "MovesCap", "MOVES", 28, WhiskerTheme.WarmBrown).rectTransform.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Top, 140f, 40f);
-            movesLabel = WhiskerTheme.MakeText(panel.transform, "MovesNum", "18", 52, WhiskerTheme.DeepBrown);
-            movesLabel.fontStyle = FontStyles.Bold;
-            movesLabel.rectTransform.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Top, 176f, 60f);
-
-            // Goal block
-            WhiskerTheme.MakeText(panel.transform, "GoalCap", "GOAL", 28, WhiskerTheme.WarmBrown).rectTransform.SetInsetAndSizeFromParentEdge(RectTransform.Edge.Top, 260f, 40f);
-            goal1Label = MakeGoalRow(panel.transform, 300f, WhiskerTheme.SunsetPink, "16");
-            goal2Label = MakeGoalRow(panel.transform, 360f, new Color(0.39f, 0.69f, 0.85f), "8");
+            var num = WhiskerTheme.MakeText(card.transform, "Num", number,
+                56, WhiskerTheme.DeepBrown);
+            num.fontStyle = FontStyles.Bold;
+            WhiskerTheme.Anchor((RectTransform)num.transform,
+                new Vector2(0f, 0.05f), new Vector2(1f, 0.60f),
+                Vector2.zero, Vector2.zero);
+            return num;
         }
 
-        private TextMeshProUGUI MakeGoalRow(Transform parent, float topInset, Color iconColor, string num)
+        // Rope-hung "목표" sign in the top middle (between the corner cards).
+        private void BuildGoalSign(RectTransform parent)
         {
-            var icon = WhiskerTheme.MakeCircle(parent, "GoalIcon", 44f, iconColor);
-            var iconRt = (RectTransform)icon.transform;
-            iconRt.anchorMin = new Vector2(0f, 1f);
-            iconRt.anchorMax = new Vector2(0f, 1f);
-            iconRt.anchoredPosition = new Vector2(40f, -topInset - 22f);
-            var label = WhiskerTheme.MakeText(parent, "GoalNum", num, 36, WhiskerTheme.DeepBrown, TextAlignmentOptions.Left);
-            label.fontStyle = FontStyles.Bold;
-            var lr = (RectTransform)label.transform;
-            lr.anchorMin = new Vector2(0f, 1f);
-            lr.anchorMax = new Vector2(1f, 1f);
-            lr.anchoredPosition = new Vector2(0f, -topInset);
-            lr.sizeDelta = new Vector2(-90f, 44f);
-            lr.pivot = new Vector2(0.5f, 1f);
-            label.margin = new Vector4(90f, 0f, 10f, 0f);
-            return label;
+            var sign = WhiskerTheme.MakePanel(parent, "GoalSign",
+                WhiskerTheme.BoardPaper);
+            var img = sign.GetComponent<Image>();
+            img.sprite = WhiskerTheme.RoundedSprite;
+            img.type = Image.Type.Sliced;
+            WhiskerTheme.Anchor((RectTransform)sign.transform,
+                new Vector2(0.28f, 0.78f), new Vector2(0.72f, 0.85f),
+                Vector2.zero, Vector2.zero);
+
+            // Two rope strands above the sign.
+            for (int i = 0; i < 2; i++)
+            {
+                var rope = WhiskerTheme.MakePanel(sign.transform, $"Rope{i}",
+                    new Color(0.56f, 0.42f, 0.30f, 1f));
+                var rt = (RectTransform)rope.transform;
+                rt.anchorMin = new Vector2(0.20f + i * 0.60f, 1f);
+                rt.anchorMax = new Vector2(0.20f + i * 0.60f, 1f);
+                rt.sizeDelta = new Vector2(6f, 36f);
+                rt.anchoredPosition = new Vector2(0f, 18f);
+                rope.GetComponent<Image>().raycastTarget = false;
+            }
+
+            var capLabel = WhiskerTheme.MakeText(sign.transform, "Cap", "목표",
+                30, WhiskerTheme.WarmBrown);
+            capLabel.fontStyle = FontStyles.Bold;
+            WhiskerTheme.Anchor((RectTransform)capLabel.transform,
+                new Vector2(0f, 0.55f), new Vector2(1f, 0.95f),
+                Vector2.zero, Vector2.zero);
+
+            var paw = WhiskerTheme.MakeText(sign.transform, "Paw", "🐾",
+                42, WhiskerTheme.WarmBrown);
+            WhiskerTheme.Anchor((RectTransform)paw.transform,
+                new Vector2(0.30f, 0.05f), new Vector2(0.50f, 0.55f),
+                Vector2.zero, Vector2.zero);
+
+            goalLabel = WhiskerTheme.MakeText(sign.transform, "Count", "28",
+                40, WhiskerTheme.DeepBrown, TextAlignmentOptions.Left);
+            goalLabel.fontStyle = FontStyles.Bold;
+            WhiskerTheme.Anchor((RectTransform)goalLabel.transform,
+                new Vector2(0.50f, 0.05f), new Vector2(0.80f, 0.55f),
+                Vector2.zero, Vector2.zero);
         }
 
-        // Right side: 3 boosters + settings button
-        private void BuildRightPanel(RectTransform parent)
+        // Right edge: 3 compact booster buttons. Settings already lives in the
+        // top row, so this column is purely boosters.
+        private void BuildRightColumn(RectTransform parent)
         {
-            float[] ys = { 0.55f, 0.46f, 0.37f, 0.28f };
             Color[] colors = {
                 new Color(0.40f, 0.55f, 0.80f),
                 new Color(0.95f, 0.74f, 0.30f),
                 new Color(0.95f, 0.55f, 0.40f),
-                WhiskerTheme.WarmBrown,
             };
-            string[] caps = { "3", "2", "3", "" };
-            string[] labels = { "B", "B", "B", "⚙" };
-            for (int i = 0; i < 4; i++)
+            string[] caps = { "3", "2", "3" };
+            float[] ys   = { 0.62f, 0.54f, 0.46f };
+
+            for (int i = 0; i < 3; i++)
             {
-                var btn = WhiskerTheme.MakeCircle(parent, $"Right{i}", 130f, colors[i]);
+                var btn = WhiskerTheme.MakeCircle(parent, $"Booster{i}", 96f, colors[i]);
                 var rt = (RectTransform)btn.transform;
                 rt.anchorMin = new Vector2(1f, ys[i]);
                 rt.anchorMax = new Vector2(1f, ys[i]);
-                rt.anchoredPosition = new Vector2(-90f, 0f);
-                var glyph = WhiskerTheme.MakeText(btn.transform, "Glyph", labels[i], 48, WhiskerTheme.Cream);
+                rt.anchoredPosition = new Vector2(-72f, 0f);
+
+                var glyph = WhiskerTheme.MakeText(btn.transform, "G", "✦", 40, WhiskerTheme.Cream);
                 WhiskerTheme.Stretch((RectTransform)glyph.transform);
-                if (!string.IsNullOrEmpty(caps[i]))
-                {
-                    var badge = WhiskerTheme.MakeCircle(btn.transform, "Badge", 44f, new Color(0.95f, 0.30f, 0.30f));
-                    var brt = (RectTransform)badge.transform;
-                    brt.anchorMin = new Vector2(1f, 0f);
-                    brt.anchorMax = new Vector2(1f, 0f);
-                    brt.anchoredPosition = new Vector2(8f, 4f);
-                    var bn = WhiskerTheme.MakeText(badge.transform, "N", caps[i], 28, WhiskerTheme.Cream);
-                    bn.fontStyle = FontStyles.Bold;
-                    WhiskerTheme.Stretch((RectTransform)bn.transform);
-                }
-                WhiskerButton.Attach(btn, () => { /* booster hook placeholder */ });
+
+                var badge = WhiskerTheme.MakeCircle(btn.transform, "Badge", 38f,
+                    new Color(0.92f, 0.30f, 0.30f));
+                var brt = (RectTransform)badge.transform;
+                brt.anchorMin = new Vector2(1f, 0f);
+                brt.anchorMax = new Vector2(1f, 0f);
+                brt.anchoredPosition = new Vector2(8f, 4f);
+                var bn = WhiskerTheme.MakeText(badge.transform, "N", caps[i], 24, WhiskerTheme.Cream);
+                bn.fontStyle = FontStyles.Bold;
+                WhiskerTheme.Stretch((RectTransform)bn.transform);
+
+                WhiskerButton.Attach(btn, () => { /* booster hook */ });
             }
         }
 
-        // Bottom-left: cat placeholder (white circle per spec)
-        private void BuildCatPlaceholder(RectTransform parent)
+        // Center-bottom: nabi companion placeholder (white circle until art ships).
+        // Sits between the board's bottom edge and the BottomNavBar.
+        private void BuildNabiCompanion(RectTransform parent)
         {
-            var cat = WhiskerTheme.MakeCircle(parent, "CatPlaceholder", 220f, new Color(1f, 1f, 1f, 0.95f));
+            var cat = WhiskerTheme.MakeCircle(parent, "NabiCompanion",
+                260f, new Color(1f, 1f, 1f, 0.92f));
             var rt = (RectTransform)cat.transform;
-            rt.anchorMin = new Vector2(0f, 0.12f);
-            rt.anchorMax = new Vector2(0f, 0.12f);
-            rt.anchoredPosition = new Vector2(140f, 80f);
+            rt.anchorMin = new Vector2(0.5f, 0.12f);
+            rt.anchorMax = new Vector2(0.5f, 0.12f);
+            rt.anchoredPosition = new Vector2(0f, 0f);
         }
 
         private void BuildBottomNav(RectTransform parent)
