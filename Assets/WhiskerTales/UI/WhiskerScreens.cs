@@ -57,12 +57,9 @@ namespace WhiskerTales.UI
         {
             switch (scene.name)
             {
-                // Puzzle HUD overlay disabled — Kit's original GameUICanvas
-                // handles the puzzle HUD in the stable v1 build. Re-enable
-                // here once the Whisker overlay is ready to ship.
-                // case WhiskerScreens.Puzzle:
-                //     EnsureController<WhiskerPuzzleHud>("__WhiskerPuzzleHud");
-                //     break;
+                case WhiskerScreens.Puzzle:
+                    EnsureController<WhiskerPuzzleHud>("__WhiskerPuzzleHud");
+                    break;
                 case WhiskerScreens.Loading:
                     EnsureCanvasAndController<WhiskerLoadingScreen>("LoadingRoot");
                     break;
